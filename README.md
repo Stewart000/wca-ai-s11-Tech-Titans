@@ -59,18 +59,18 @@ def analyze_customer_feedback(feedback_text: str) -> str:
     
    return response.text
 
-# 3. parse and return the structured object
-# The SDK automatically handles the conversation back to your pydantic class
+## 3. parse and return the structured object
+## The SDK automatically handles the conversation back to your pydantic class
 return FeedbackAnalysis.model_validate_JSON(response.text)
 
-# Local Test
+## Local Test
 if _name_== "__main__":
     sample_feedback = "I Love the new UI, but billing charged me twice for my subscription. Please fix this issue."
     
-   # Run the agent
+   ## Run the agent
    result = analyze_feedback(sample_feedback)
     
-   # can access the fields with dot notation and type hinting
+   ## can access the fields with dot notation and type hinting
    print(f"Sentiment: {result.sentiment}"),
     print(f"Category: {result.category}"),
     print(f"Urgency: {result.urgency_score} /5")

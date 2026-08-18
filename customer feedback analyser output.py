@@ -1,114 +1,104 @@
-import os
+"""
+Customer Feedback Analyzer
+
+Uses Gemini + Pydantic structured output to analyze feedback,
+then saves a JSON file and a Markdown report.
+"""
+
 import json
 from datetime import datetime
 from pathlib import Path
 
-from dotenv import load_dotenv
-import google.generativeai as genai
+from r import FeedbackAnalysisSchema, analyze_customer_feedback
 
-# -----------------------------
-# Load environment variables / JSON configuration from the local .env file.
-# Do not hardcode API keys in the source code.  
-# -----------------------------
+OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 
-load_dotenv()
 
-MODEL_NAME = "gemini-1.5-flash"
+def build_report(feedback: str, analysis: FeedbackAnalysisSchema) -> str:
+    """Build a Markdown report from the feedback and its analysis."""
+    lines = [
+        "# Customer Feedback Analysis Report",
+        f"- Generated at: {datetime.now().isoformat(timespec='seconds')}",
+        "",
+        "## Original Feedback",
+        feedback,
+        "",
+        "## Analysis",
+        "```json",
+        json.dumps(analysis.model_dump(), indent=2, ensure_ascii=False),
+        "```",
+    ]
+    return "\n".join(lines)
 
-def extract_json(raw_text):
-    """Extract and parse a JSON object from Gemini output, including markdown fences."""
-    if raw_text is None:
-        raise ValueError("Gemini returned no content.")
+# Output directory for saving JSON and Markdown reports
 
-    cleaned = str(raw_text).strip()
+def save_outputs(analysis: FeedbackAnalysisSchema, report_md: str) -> tuple[Path, Path]:
+    """Save the JSON analysis and Markdown report to timestamped files."""
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Remove markdown fences used by the model for readability.
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r"\s*```$", "", cleaned)
+    json_path = OUTPUT_DIR / f"feedback_analysis_{timestamp}.json"
+    md_path = OUTPUT_DIR / f"feedback_report_{timestamp}.md"
 
-    # Try standard JSON parsing first.
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
-        # Fall back to the first JSON object in case the model adds surrounding prose.
-        match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
-        if not match:
-            raise ValueError("Bad JSON from Gemini response.")
-        return json.loads(match.group(0))
-
-# Prompt formatting function using the R-T-C-C-O framework: Role, Task, Context, Constraints, Output.
-
-def build_rtcco_prompt(role, task, context, constraints, output):
-    """Format a prompt using the R-T-C-C-O framework: Role, Task, Context, Constraints, Output."""
-    return f"""
-
-Role:
-You are a junior online business analyst.
-
-Task:
-You are tasked with analyzing customer feedback data and providing insights to improve the business.
-
-Context:
-You have access to a dataset of customer feedback reviews across various products and services.
-Customer feedback: [INSERT_CUSTOMER_FEEDBACK_HERE]
-
-Constraints:
-- Return your insights in a structured JSON format.
-- Provide insights in a clear and concise manner, using plain and respectful language.
-- Use data-driven analysis to support your conclusions.
-- Avoid making assumptions without evidence from the data.
-- Metrics to track such as customer satisfaction scores, common complaints, and recurring themes should be highlighted.
-- Be transparent on what can and cannot be concluded from the data.
-
-Output:
-Return a JSON object containing the following fields:
-- "summary": A brief summary of the overall customer sentiment.
-- "key_issues": A list of the most common issues or complaints raised by customers.
-- "recommendations": A list of actionable recommendations for improving the business based on the feedback.
-- "data_insights": Any additional insights or patterns observed in the data that could be useful for decision-making.
-
-"""
-# Model configuration and API call functions.
-
-def configure_model():
-    """Load the Gemini API key from .env and create the model client."""
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key or api_key.strip() == "" or api_key == "your_key_here":
-        raise ValueError("Missing GEMINI_API_KEY in the .env file.")
-
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel(MODEL_NAME)
-
-# Model initialization and API call function
-
-def call_gemini(model, prompt):
-    """Call the Gemini API with the given prompt."""
-    response = model.generate_content(prompt)
-    return response.text
-
-# First API call
-
-# Sample feedback data (replace with actual feedback source)
-feedback = ""
-
-# Configure the model
-model = configure_model()
-
-analysis_prompt = build_rtcco_prompt(
-        role="You are a junior online business analyst.",
-            task="Analyse this customer feedback and determine overall sentiment, major themes, issues, and urgency.",
-        context=f"Customer feedback: {feedback}",
-        constraints=(
-            "Return only valid JSON. Use exact keys: sentiment, sentiment_score, key_themes, "
-            "main_issues, strengths, suggested_improvements, urgency_level. "
-            "Keep values concise but useful."
-        ),
-        output="JSON object only with no markdown fences or commentary.",
+    json_path.write_text(
+        json.dumps(analysis.model_dump(), indent=2, ensure_ascii=False), encoding="utf-8"
     )
+    md_path.write_text(report_md, encoding="utf-8")
 
-analysis_raw = call_gemini(model, analysis_prompt)
-analysis = extract_json(analysis_raw)
+    return json_path, md_path
 
-# File Saving
+# Function to get feedback input from the user, either pasted directly or loaded from a file.
 
+def get_feedback_input() -> str | None:
+    """Prompt the user for feedback text, pasted directly or from a file. Returns None to quit."""
+    choice = input("\nPaste feedback (p), load from file (f), or quit (q)? ").strip().lower()
+
+    if choice == "q":
+        return None
+    if choice == "f":
+        path = input("File path: ").strip()
+        try:
+            return Path(path).read_text(encoding="utf-8").strip()
+        except OSError as e:
+            print(f"Could not read file: {e}")
+            return ""
+    if choice == "p":
+        print("Paste feedback, then press Enter on an empty line to finish:")
+        lines = iter(input, "")
+        return "\n".join(lines).strip()
+
+    print("Invalid choice.")
+    return ""
+
+# Main function to run the feedback analyzer interactively.
+
+def main() -> None:
+    while True:
+        feedback = get_feedback_input()
+        if feedback is None:
+            print("Goodbye.")
+            break
+        if not feedback:
+            continue
+
+        try:
+            analysis = analyze_customer_feedback(feedback)
+        except Exception as e:
+            print(f"Analysis failed: {e}")
+            continue
+
+        report_md = build_report(feedback, analysis)
+        print("\n=== Analysis ===")
+        print(json.dumps(analysis.model_dump(), indent=2, ensure_ascii=False))
+
+        json_path, md_path = save_outputs(analysis, report_md)
+        print(f"\nSaved: {json_path}")
+        print(f"Saved: {md_path}")
+
+        if input("\nAnalyze another? (y/n): ").strip().lower() != "y":
+            print("Goodbye.")
+            break
+
+
+if __name__ == "__main__":
+    main()

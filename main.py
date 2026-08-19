@@ -106,7 +106,12 @@ Rules:
         ),
     )
 
-    return FeedbackAnalysis.model_validate_json(response.text)
+    try:
+        return FeedbackAnalysis.model_validate_json(response.text)
+    except Exception as error:
+        raise ValueError(
+            f"Invalid JSON from stage 1: {error}"
+        ) from error
 
 
 # ==================================================
@@ -176,7 +181,12 @@ Return valid JSON with exactly these two fields:
         ),
     )
 
-    return ProfessionalResponse.model_validate_json(response.text)
+    try:
+        return ProfessionalResponse.model_validate_json(response.text)
+    except ValueError as error:
+        raise ValueError(
+            f"Invalid JSON from stage 2: {error}"
+        ) from error
 
 
 # ==================================================
@@ -293,14 +303,14 @@ def get_feedback():
 
     while True:
 
-        feedback = input(
-            "\nEnter customer feedback: "
-        ).strip()
+        try:
+            feedback = input("\nEnter customer feedback: ").strip()
 
-        if not feedback:
-            print(
-                "Error: Feedback cannot be empty."
-            )
+            if not feedback:
+                raise ValueError("Feedback cannot be empty.")
+
+        except ValueError as error:
+            print(f"Error: {error}")
             continue
 
         if len(feedback) < 10:

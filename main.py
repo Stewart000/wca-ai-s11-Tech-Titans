@@ -7,6 +7,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 from output_handler import format_output, save_output
+from stage1 import analyze_feedback
 
 
 # --------------------------------------------------
@@ -102,54 +103,91 @@ Return valid JSON with exactly these two fields:
 # Local test
 # --------------------------------------------------
 
-if __name__ == "__main__":
+# --------------------------------------------------
+# Stage 3: Menu and User Input Validation
+# --------------------------------------------------
 
+def display_menu():
+    """Display the main application menu."""
+    print("\n========================================")
+    print("   CUSTOMER FEEDBACK ANALYZER")
     print("========================================")
-    print("   CUSTOMER FEEDBACK ANALYZER - STAGE 2")
+    print("1. Analyze customer feedback")
+    print("2. Exit")
     print("========================================")
 
-    feedback = input("\nEnter customer feedback: ").strip()
 
-    if not feedback:
-        print("Error: Customer feedback cannot be empty.")
-        exit()
+def get_menu_choice():
+    """Get and validate the user's menu choice."""
 
-    # Temporary Stage 1 result.
-    # These values will later come from the real Stage 1 API call.
-    sentiment = "Negative"
-    category = "Billing"
-    action_item = (
-        "Investigate the duplicate subscription charge "
-        "and resolve the billing issue."
-    )
+    while True:
+        choice = input("Enter your choice (1 or 2): ").strip()
+
+        if choice == "1":
+            return choice
+
+        if choice == "2":
+            return choice
+
+        print("\nInvalid choice. Please enter 1 or 2.")
+
+
+def get_feedback():
+    """Get and validate customer feedback."""
+
+    while True:
+        feedback = input("\nEnter customer feedback: ").strip()
+
+        if not feedback:
+            print("Error: Feedback cannot be empty.")
+            continue
+
+        if len(feedback) < 10:
+            print(
+                "Error: Please provide more detailed feedback "
+                "(at least 10 characters)."
+            )
+            continue
+
+        return feedback
+
+
+def analyze_customer_feedback():
+    """Run the Stage 1 → Stage 2 → output pipeline."""
+
+    feedback = get_feedback()
 
     try:
+        analysis = analyze_feedback(feedback)
 
-        # Generate the professional customer response.
+        sentiment = analysis.sentiment
+        category = analysis.category
+        action_item = analysis.summary
+
         result = generate_professional_response(
             sentiment,
             category,
             action_item
         )
 
-        # Display the Stage 2 result.
         print("\n--- PROFESSIONAL RESPONSE ---")
         print(result.response)
 
         print("\n--- RECOMMENDED NEXT STEP ---")
         print(result.recommended_next_step)
 
-        # Format the complete result for saving.
         formatted_output = format_output(
             feedback=feedback,
-            sentiment=sentiment,
-            category=category,
-            action_item=action_item,
+            sentiment=analysis.sentiment,
+            sentiment_score=analysis.sentiment_score,
+            category=analysis.category,
+            summary=analysis.summary,
+            tags=analysis.tags,
+            urgent_action_required=analysis.urgent_action_required,
             professional_response=result.response,
             recommended_next_step=result.recommended_next_step
         )
 
-        # Save the final result to the outputs folder.
         saved_file = save_output(formatted_output)
 
         print(f"\nOutput saved successfully to: {saved_file}")
@@ -157,3 +195,23 @@ if __name__ == "__main__":
     except Exception as error:
         print("\nAn error occurred while processing the feedback.")
         print(error)
+
+
+# --------------------------------------------------
+# Application entry point
+# --------------------------------------------------
+
+if __name__ == "__main__":
+
+    while True:
+
+        display_menu()
+
+        choice = get_menu_choice()
+
+        if choice == "2":
+            print("\nThank you for using Customer Feedback Analyzer.")
+            print("Goodbye!")
+            break
+
+        analyze_customer_feedback()

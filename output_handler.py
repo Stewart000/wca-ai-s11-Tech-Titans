@@ -9,15 +9,20 @@ from datetime import datetime
 def format_output(
     feedback: str,
     sentiment: str,
+    sentiment_score: float,
     category: str,
-    action_item: str,
+    summary: str,
+    tags: list[str],
+    urgent_action_required: bool,
     professional_response: str,
     recommended_next_step: str
 ) -> str:
     """
-    Format the customer feedback analysis and professional response
-    into a readable report.
+    Format the complete Stage 1 and Stage 2 analysis
+    into a readable Markdown report.
     """
+
+    tags_text = ", ".join(tags)
 
     output = f"""
 CUSTOMER FEEDBACK ANALYSIS
@@ -26,18 +31,31 @@ CUSTOMER FEEDBACK ANALYSIS
 Customer Feedback:
 {feedback}
 
+
+STAGE 1 - AI ANALYSIS
+=====================
+
 Sentiment:
 {sentiment}
+
+Sentiment Score:
+{sentiment_score}
 
 Category:
 {category}
 
-Action Item:
-{action_item}
+Summary:
+{summary}
+
+Tags:
+{tags_text}
+
+Urgent Action Required:
+{urgent_action_required}
 
 
-PROFESSIONAL RESPONSE
-=====================
+STAGE 2 - PROFESSIONAL RESPONSE
+================================
 
 {professional_response}
 

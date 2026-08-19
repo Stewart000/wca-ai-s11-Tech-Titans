@@ -71,22 +71,18 @@ def analyze_feedback(feedback: str) -> FeedbackAnalysis:
     """Analyze customer feedback using Gemini."""
 
     prompt = f"""
+ROLE:
 You are a Customer Operations Triaging Agent.
 
-Analyze the following customer feedback:
+TASK:
+Analyze the customer's feedback and identify its sentiment,
+category, summary, important tags, and urgency.
 
+CONTEXT:
+The customer provided the following feedback:
 "{feedback}"
 
-Determine:
-
-1. Sentiment
-2. Sentiment confidence score
-3. Primary category
-4. One-sentence summary
-5. Important keywords/tags
-6. Whether urgent action is required
-
-Rules:
+CONSTRAINTS:
 - Sentiment must be Positive, Neutral, or Negative.
 - Sentiment score must be between 0.0 and 1.0.
 - Category must be Bug, Feature Request, Pricing,
@@ -94,6 +90,15 @@ Rules:
 - Do not invent information.
 - Mark urgent_action_required as true only when the
   situation genuinely requires immediate attention.
+
+OUTPUT:
+Return structured JSON containing:
+- sentiment
+- sentiment_score
+- category
+- summary
+- tags
+- urgent_action_required
 """
 
     response = client.models.generate_content(
@@ -111,7 +116,7 @@ Rules:
     except Exception as error:
         raise ValueError(
             f"Invalid JSON from stage 1: {error}"
-        ) from error
+    ) from error
 
 
 # ==================================================

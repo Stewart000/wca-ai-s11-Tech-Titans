@@ -1,30 +1,43 @@
 # Customer Feedback Analyzer
 
-## Project Overview
+## Group Project
 
-Customer Feedback Analyzer is a Python AI tool that helps businesses understand customer feedback and decide what action to take.
+**Tool Name:** Customer Feedback Analyzer  
+**Repository:** wca-ai-s11-Tech-Titans-Tech-Titans
 
-The tool uses two connected Gemini API calls:
+## Group Members
 
-1. **Stage 1 - Feedback Analysis:** Analyzes the customer's feedback and returns structured JSON containing sentiment, category, summary, tags, sentiment score, and urgency.
-2. **Stage 2 - Professional Response:** Uses the Stage 1 analysis to generate a professional customer response and recommend the next practical action.
+- Gill Omondi Ochieng
+- Alfred Otieno Owuor
+- Stewart Murandi
 
-The final analysis is saved as a Markdown (`.md`) file in the `outputs` folder.
+## Problem
 
-## Features
+Businesses receive customer feedback that can be difficult and time-consuming to process manually. Customer Feedback Analyzer uses AI to analyze customer feedback, identify the main issue, and produce a professional response and recommended action.
 
-- Two connected Gemini AI API calls
-- Structured JSON responses using Pydantic
-- Sentiment analysis
-- Customer feedback categorization
-- Keyword/tag extraction
-- Urgency detection
-- Professional customer response generation
-- Recommended next action
-- Input validation
-- Error handling
-- Markdown output files
-- Interactive menu
+## What the Tool Does
+
+The Customer Feedback Analyzer processes customer feedback in two connected AI stages.
+
+### Stage 1 — Feedback Analysis
+
+The first Gemini API call analyzes the customer's feedback and returns structured JSON containing:
+
+- Sentiment
+- Sentiment score
+- Category
+- Summary
+- Tags
+- Urgency
+
+### Stage 2 — Professional Response
+
+The second Gemini API call uses the Stage 1 analysis to generate:
+
+- A professional response to the customer
+- A recommended next step for the business
+
+The final result is displayed to the user and saved as a Markdown file in the `outputs` folder.
 
 ## How the Tool Works
 
@@ -32,21 +45,23 @@ The final analysis is saved as a Markdown (`.md`) file in the `outputs` folder.
 Customer Feedback
         |
         v
-   User Menu
+      Menu
         |
         v
-  Stage 1: Gemini
+  Gemini API - Stage 1
   Feedback Analysis
         |
         v
    Structured JSON
         |
         v
-  Stage 2: Gemini
+  Gemini API - Stage 2
+  Response Generation
+        |
+        v
  Professional Response
+        +
+ Recommended Next Step
         |
         v
- Recommended Action
-        |
-        v
-   Markdown File
+    Markdown File
